@@ -22,7 +22,7 @@ services:
   # Backend Service
   # ------------------
   backend-service:
-    build: ./backend
+    image: bera1998/3-tire-end-to-end-backend-service
     container_name: backend-service
     restart: always
     depends_on:
@@ -40,7 +40,7 @@ services:
   # Frontend Service
   # ------------------
   frontend:
-    build: ./frontend
+    image: bera1998/3-tire-end-to-end-frontend
     container_name: flower-frontend
     restart: always
     depends_on:
