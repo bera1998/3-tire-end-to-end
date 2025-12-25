@@ -22,7 +22,8 @@ services:
   # Backend Service
   # ------------------
   backend-service:
-    image: bera1998/3-tire-end-to-end-backend-service
+    #image: bera1998/3-tire-end-to-end-backend-service
+    build: ./backend
     container_name: backend-service
     restart: always
     depends_on:
