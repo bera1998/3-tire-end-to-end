@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: bera1998/3-tire-end-to-end-frontend
+          image: 183035154159.dkr.ecr.ap-south-1.amazonaws.com/frontend-app:latest
+          #image: bera1998/3-tire-end-to-end-frontend (if using Docker Hub)
           imagePullPolicy: Always
           ports:
             - containerPort: 80
