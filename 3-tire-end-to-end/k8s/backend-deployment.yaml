@@ -14,7 +14,8 @@ spec:
     spec:
       containers:
         - name: backend
-          image: 183035154159.dkr.ecr.ap-south-1.amazonaws.com/backend-app:v1
+          image: bera1998/backend-app:IMAGE_TAG
+          #image: 183035154159.dkr.ecr.ap-south-1.amazonaws.com/backend-app:v1
           #image: bera1998/3-tire-end-to-end-backend-service:v1 (if using Docker Hub)
           imagePullPolicy: Always
           ports:
