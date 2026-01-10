@@ -2,6 +2,10 @@ pipeline {
 
   agent none
 
+  triggers {
+    githubPush()
+  }
+
   environment {
     IMAGE_TAG = "${BUILD_NUMBER}"
     DOCKERHUB_USER = "bera1998"
@@ -14,34 +18,31 @@ pipeline {
     stage('Checkout Code') {
       agent any
       steps {
-        git branch: 'main', url: 'https://github.com/bera1998/3-tire-end-to-end.git'
+        checkout scm
       }
     }
 
-    /* ================= FRONTEND PIPELINE ================= */
-    stage('Frontend Build & Scan') {
+    /* ================= FRONTEND SCAN ================= */
+    stage('Frontend Scan') {
       agent {
         docker {
-          image 'node:18-alpine'
+          image 'sonarsource/sonar-scanner-cli'
         }
       }
       steps {
         dir('Frontend') {
-          sh '''
-            echo "Frontend static files – no build required"
-            ls -l src
-          '''
-
-          sh '''
-            sonar-scanner \
-            -Dsonar.projectKey=frontend-app \
-            -Dsonar.sources=src \
-            -Dsonar.host.url=$SONAR_URL
-          '''
+          withSonarQubeEnv('sonar-server') {
+            sh '''
+              sonar-scanner \
+              -Dsonar.projectKey=frontend-app \
+              -Dsonar.sources=src
+            '''
+          }
         }
       }
     }
 
+    /* ================= FRONTEND IMAGE ================= */
     stage('Build & Push Frontend Image') {
       agent any
       steps {
@@ -61,30 +62,27 @@ pipeline {
       }
     }
 
-    /* ================= BACKEND PIPELINE ================= */
-    stage('Backend Build, Test & Scan') {
+    /* ================= BACKEND SCAN ================= */
+    stage('Backend Scan') {
       agent {
         docker {
-          image 'python:3.10-slim'
+          image 'sonarsource/sonar-scanner-cli'
         }
       }
       steps {
         dir('backend') {
-          sh '''
-            pip install -r requirements.txt
-            python -m compileall app.py
-          '''
-
-          sh '''
-            sonar-scanner \
-            -Dsonar.projectKey=backend-app \
-            -Dsonar.sources=. \
-            -Dsonar.host.url=$SONAR_URL
-          '''
+          withSonarQubeEnv('sonar-server') {
+            sh '''
+              sonar-scanner \
+              -Dsonar.projectKey=backend-app \
+              -Dsonar.sources=.
+            '''
+          }
         }
       }
     }
 
+    /* ================= BACKEND IMAGE ================= */
     stage('Build & Push Backend Image') {
       agent any
       steps {
@@ -104,7 +102,7 @@ pipeline {
       }
     }
 
-    /* ================= UPDATE K8s YAML ================= */
+    /* ================= UPDATE K8S YAML ================= */
     stage('Update Kubernetes Manifests') {
       agent any
       steps {
@@ -119,14 +117,22 @@ pipeline {
     stage('Commit & Push for ArgoCD') {
       agent any
       steps {
-        sh '''
-          git config user.email "jenkins@ci.com"
-          git config user.name "jenkins"
+        withCredentials([usernamePassword(
+          credentialsId: 'github-pat',
+          usernameVariable: 'GIT_USER',
+          passwordVariable: 'GIT_TOKEN'
+        )]) {
+          sh '''
+            git config user.email "jenkins@ci.com"
+            git config user.name "jenkins"
 
-          git add k8s/
-          git commit -m "Update image tags to $IMAGE_TAG"
-          git push origin main
-        '''
+            git add k8s/
+
+            git diff --quiet || git commit -m "[ci skip] Update image tags to $IMAGE_TAG"
+
+            git push https://$GIT_USER:$GIT_TOKEN@github.com/bera1998/3-tire-end-to-end.git main
+          '''
+        }
       }
     }
 
